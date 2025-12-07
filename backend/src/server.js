@@ -2,6 +2,7 @@
 import express from "express"
 import cors from "cors"
 import dotenv from "dotenv"
+import path from "path"
 // const express = require("express")
 
 //local imports
@@ -12,6 +13,7 @@ import ratelimiter from "./middleware/rateLimitier.js";
 dotenv.config();
 console.log(process.env.MONGO_URI)
 const app = express()
+const __dirname = path.resolve() //pat of backend by default
 const PORT = process.env.PORT || 5001
 
 
@@ -25,13 +27,30 @@ app.use(express.json()) //this middleware will parse json body response  : acess
 // })
 
 //CORS config should be before ratelimiter  
+//use cors only in development as in prod both frontend and backend domains are same
+
+if(process.env.NODE_ENV !== "production"){
 app.use(cors({
     origin: "http://localhost:5173"
 })) 
+}
+
 //using ratelimiter
 app.use(ratelimiter)
 //allow every url to resolve cors issue 
 app.use("/api/notes", notesRoutes)
+
+
+//middleware to serve frontend under same domain as backend
+//serve frontend as a static asset 
+//do this process only in produciton 
+if(process.env.NODE_ENV === "production"){
+    app.use(express.static(path.join(__dirname,"../frontend/dist")))
+
+app.get("*",(req,res)=>{
+    res.sendFile(path.join(__dirname,"../frontend", "dist","index.html"))
+})
+}
 // we are listening to routes 
 //listening for get request 
 
